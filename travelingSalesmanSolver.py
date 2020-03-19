@@ -1,12 +1,10 @@
 
 import math
 import random
-import operator
-"""
- This Node represents a city in the TSP
+
+""" This class represents a city in the TSP
  A city has an x and y coordinate
- These Nodes will represent the population in the genetic algorithm
-"""
+ These Nodes will represent the population in the genetic algorithm """
 
 
 class CityNode:
@@ -18,9 +16,8 @@ class CityNode:
         self.name = "CITY " + str(self.city_counter)
         CityNode.city_counter += 1
 
-    cityCounter = 1
-    # Users Pythagoras to determine the distance between this City node
-    # and another City node in a coordinate space
+    """ Users Pythagoras to determine the distance between this City node
+    and another City node in a coordinate space """
 
     def distance_to(self, anotherCity):
         x_component = abs(self.x - anotherCity.x)
@@ -28,16 +25,21 @@ class CityNode:
         distance = math.sqrt((x_component**2)+(y_component**2))
         return distance
 
-    # For a better representation
+    """ For a clearer representation of the class """
+
     def __repr__(self):
         return "\n" + self.name + ": (" + str(self.x) + "," + str(self.y) + ")"
 
 
-class Fitness:
+""" This class determines how adaptable (probability of surviving)
+    an element is in regard to the overall population """
+
+
+class Adaptability:
     def __init__(self, cities):
         self.cities = cities
         self.distance = 0
-        self.fitness = 0.0
+        self.adaptability = 0.0
 
     def determine_distance(self):
         if self.distance == 0:
@@ -58,16 +60,17 @@ class Fitness:
             self.distance = globalDistance
         return self.distance
 
-    """ Calculates the fitness attribute described in the genetic algorithm
+    """ Calculates the adaptability attribute described in the genetic algorithm
     !!! REMEMBER: the lesser the distance, the better the solution """
 
-    def determine_fitness(self):
-        if self.fitness == 0:
-            self.fitness = 1/float(self.determine_distance())
-        return self.fitness
+    def determine_adaptability(self):
+        if self.adaptability == 0:
+            self.adaptability = 1/float(self.determine_distance())
+        return self.adaptability
 
 
-""" Creates the population described in the genetic algorithm """
+""" Creates the population described in the genetic algorithm. This gathers random tuples from the list
+    to create the population. """
 
 
 def create_single_route(cities):
@@ -82,29 +85,31 @@ def determine_initial_population(size, cities):
     return population
 
 
-""" Ranks the 'fittest' routes, which are the routes that will 'breed' in the GA """
+""" Ranks the 'best' routes, which are the routes that will 'breed' in the Genetic Algorithm """
 
 
-def determine_fittest_routes(population):
+def determine_best_routes(population):
     results = {}
     for i in range(0, len(population)):
-        results[i] = Fitness(population[i]).determine_fitness()
-    # The best routes are the ones with less distance
-    # sortedResults = sorted(results)
+        results[i] = Adaptability(population[i]).determine_adaptability()
+    """ The best routes are the ones with less distance.
+        We use the key=lambda because we are creating an anonymous
+        function to sort the list based on the first element on it """
     sorted_results = sorted(results.items(),
-                            key=operator.itemgetter(1))
+                            key=lambda x: x[1])
     return sorted_results
 
 
 """ Selects the population members to be 'mated' for reproduction.
     In this case, the implemented process for selection
-    is just selecting the better routes in the fit rank """
+    is just selecting the top n (where n=elite_quantity)
+    members in the adaptability rank """
 
 
-def select_mating_pool(population, fittest_routes, elite_quantity):
+def select_mating_pool(population, best_routes, elite_quantity):
     selected_members = []
     for i in range(elite_quantity):
-        selected_members.append(fittest_routes[i][0])
+        selected_members.append(best_routes[i][0])
 
     new_mating_pool = []
     for i in range(0, len(selected_members)):
@@ -118,32 +123,30 @@ def select_mating_pool(population, fittest_routes, elite_quantity):
     to simulate nature """
 
 
-def produce_offspring(parent1, parent2):
+def produce_offspring(first_parent, second_parent):
     offspring = []
     offspring_1st_half = []
     offspring_2nd_half = []
 
-    first_gene = int(random.random() * len(parent1))
-    second_gene = int(random.random() + len(parent1))
-    original_gene = min(first_gene, second_gene)
-    new_gene = max(first_gene, second_gene)
+    first_gene = int(random.random() * len(first_parent))
+    second_gene = int(random.random() * len(first_parent))
+    copied_set_start = min(first_gene, second_gene)
+    copied_set_end = max(first_gene, second_gene)
 
-    for i in range(original_gene, new_gene):
-        offspring_1st_half.append(parent1[i])
+    """ Copies a set (part) of random length from the first parent to the offpsring """
+    for i in range(copied_set_start, copied_set_end):
+        offspring_1st_half.append(first_parent[i])
 
-    offspring_2nd_half = [
-        item for item in offspring_2nd_half if item not in offspring_1st_half]
-    """ for chrom in parent2:
-        if chrom not in offspring_1st_half:
-            offspring_2nd_half.append(chrom)
- """
+    """ Fills the missing gaps in the offspring with the contents of the second parent """
+    for chromosomes in second_parent:
+        if chromosomes not in offspring_1st_half:
+            offspring_2nd_half.append(chromosomes)
     offspring = offspring_1st_half+offspring_2nd_half
 
     return offspring
 
 
-""" Breeds the population to create new offsprings.
-    This algorithm doens't handle 'incest' """
+""" Breeds the population to create a new population with offsprings """
 
 
 def breed_population(mating_pool, elite_quantity):
@@ -162,15 +165,24 @@ def breed_population(mating_pool, elite_quantity):
     return offsprings
 
 
-def mutate_single(individual, mutation_prob):
-    for original in range(len(individual)):
+""" Simulates mutations of a single element in the list, to keep the general list still 'fresh'
+    and to avoid an event called 'convergence' (results don't differ much) from happening early.
+    Mutation happens on a certain probability (mutation_prob). The implementation of this mutation
+    just switches the order of some random cities in the list. """
+
+
+def mutate_single(single, mutation_prob):
+    for original in range(len(single)):
         if(random.random() < mutation_prob):
-            change_original = int(random.random()*len(individual))
-            city_placeholder1 = individual[original]
-            city_placeholder2 = individual[change_original]
-            individual[original] = city_placeholder2
-            individual[change_original] = city_placeholder1
-    return individual
+            change_original = int(random.random()*len(single))
+            city_placeholder1 = single[original]
+            city_placeholder2 = single[change_original]
+            single[original] = city_placeholder2
+            single[change_original] = city_placeholder1
+    return single
+
+
+""" Sends all the population to the mutation function to see which are randomly mutated """
 
 
 def mutate_population(population, mutation_prob):
@@ -183,38 +195,61 @@ def mutate_population(population, mutation_prob):
     return new_population
 
 
+""" Creates a new population based on the previous one """
+
+
 def create_next_population(current_population, elite_quantity, mutation_prob):
-    fittest_members = determine_fittest_routes(current_population)
+    best_members = determine_best_routes(current_population)
     mating_pool = select_mating_pool(
-        current_population, fittest_members, elite_quantity)
-    offspring = breed_population(mating_pool, elite_quantity)
-    new_generation = mutate_population(offspring, mutation_prob)
-    return new_generation
+        current_population, best_members, elite_quantity)
+    offsprings = breed_population(mating_pool, elite_quantity)
+    new_population = mutate_population(offsprings, mutation_prob)
+    return new_population
+
+
+""" Runs the genetic algorithm :) """
 
 
 def genetic_algorithm(population, population_quantity, elite_quantity, mutation_prob, iterations):
     initial_population = determine_initial_population(
         population_quantity, population)
-    dist_initial = determine_fittest_routes(initial_population)[0][1]
+    dist_initial = determine_best_routes(initial_population)[0][1]
     print("Initial best distance: " + str(1/dist_initial))
+    print("-----------------")
+
+    best_route = determine_best_routes(initial_population)[0][0]
+    print("Initial best solution for the Traveling Salesman: ",
+          initial_population[best_route])
 
     new_population = initial_population
     for _ in range(0, iterations):
         new_population = create_next_population(
             new_population, elite_quantity, mutation_prob)
+    print("-----------------")
 
-    dist_final = determine_fittest_routes(new_population)[0][1]
+    dist_final = determine_best_routes(new_population)[0][1]
     print("Final best distance: " + str(1/dist_final))
+    print("-----------------")
 
-    best_route = determine_fittest_routes(new_population)[0][0]
-    print("Best route for the Traveling Salesman: ",
+    best_route = determine_best_routes(new_population)[0][0]
+    print("Final best solution for the Traveling Salesman: ",
           new_population[best_route])
 
 
-city_list = []
+""" Randomly creates a list of 10 cities.
+    Uncomment to TEST! """
+""" random_cities = []
 for i in range(0, 10):
-    city_list.append(CityNode(x=int(random.random() * 50),
-                              y=int(random.random() * 50)))
+    random_x = int(random.random()*50)
+    random_y = int(random.random()*50)
+    random_cities.append(CityNode(random_x, random_y)) """
 
-genetic_algorithm(population=city_list, population_quantity=100,
-                  elite_quantity=20, mutation_prob=0.01, iterations=1000)
+""" Creates a list of 10 predetermined cities. """
+cities = []
+positions_x = [20, 30, 25, 15, 0, 32, 2, 3, 47, 11]
+positions_y = [11, 47, 3, 2, 32, 0, 15, 25, 30, 20]
+for i in range(10):
+    cities.append(CityNode(positions_x[i], positions_y[i]))
+
+""" Population, quantity of the population, elite quantity of chosen members, probability of mutation and iterations """
+genetic_algorithm(cities, 100, 20, 0.5, 1000)
