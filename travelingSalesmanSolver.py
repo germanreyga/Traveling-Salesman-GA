@@ -8,12 +8,12 @@ import random
 
 
 class CityNode:
-    city_counter = 1
+    city_counter = 0
 
     def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.name = "CITY " + str(self.city_counter)
+        self.name = "CITY " + str(self.city_counter) + " at"
         CityNode.city_counter += 1
 
     """ Users Pythagoras to determine the distance between this City node
@@ -80,7 +80,7 @@ def create_single_route(cities):
 
 def determine_initial_population(size, cities):
     population = []
-    for _ in range(0, size):
+    for _ in range(size):
         population.append(create_single_route(cities))
     return population
 
@@ -149,7 +149,8 @@ def produce_offspring(first_parent, second_parent):
             offspring_2nd_half.append(chromosomes)
 
     """ Joins the two halves of the offspring to create a single one """
-    offspring = offspring_1st_half+offspring_2nd_half
+    offspring = offspring_2nd_half[:copied_set_start] + \
+        offspring_1st_half + offspring_2nd_half[copied_set_start:]
 
     return offspring
 
@@ -174,7 +175,7 @@ def breed_population(mating_pool, elite_quantity):
 
 
 """ Simulates mutations of a single element in the list, to keep the general list still 'fresh'
-    and to avoid an event called 'convergence' (dapatability_results don't differ much) from happening early.
+    and to avoid an event called 'convergence' (results don't differ much) from happening early.
     Mutation happens on a certain probability (mutation_prob). The implementation of this mutation
     just switches the order of some random cities in the list. """
 
@@ -230,7 +231,7 @@ def genetic_algorithm(population, population_quantity, elite_quantity, mutation_
           initial_population[best_route])
 
     new_population = initial_population
-    for _ in range(0, iterations):
+    for _ in range(iterations):
         new_population = create_next_population(
             new_population, elite_quantity, mutation_prob)
     print("-----------------")
@@ -262,8 +263,8 @@ for i in range(10):
 
 """ Population, quantity of the population, elite quantity of chosen members, probability of mutation and iterations """
 probability_to_mutate = 0.01
-population_number = 50
-members_to_breed = 15
+population_number = 200
+members_to_breed = 50
 iterations = 1000
 genetic_algorithm(cities, population_number,
                   members_to_breed, probability_to_mutate, iterations)
