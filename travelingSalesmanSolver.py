@@ -253,3 +253,9 @@ for i in range(10):
 
 """ Population, quantity of the population, elite quantity of chosen members, probability of mutation and iterations """
 genetic_algorithm(cities, 100, 20, 0.5, 1000)
+
+""" References:
+* https://medium.com/@becmjo/genetic-algorithms-and-the-travelling-salesman-problem-d10d1daf96a1
+* Suwannarongsri, Supaporn & Puangdownreong, Deacha. (2012). Solving traveling salesman problems via artificial intelligent search techniques. 137-141.
+* https://towardsdatascience.com/evolution-of-a-salesman-a-complete-genetic-algorithm-tutorial-for-python-6fe5d2b3ca35
+"""
