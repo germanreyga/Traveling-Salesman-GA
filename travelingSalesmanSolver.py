@@ -31,7 +31,7 @@ class CityNode:
         return "\n" + self.name + ": (" + str(self.x) + "," + str(self.y) + ")"
 
 
-""" This class determines how adaptable (probability of surviving)
+""" This class determines how adaptable (probability of surviving) or 'fit'
     an element is in regard to the overall population """
 
 
@@ -44,7 +44,7 @@ class Adaptability:
     def determine_distance(self):
         if self.distance == 0:
             globalDistance = 0
-            for i in range(0, len(self.cities)):
+            for i in range(len(self.cities)):
                 origin = self.cities[i]
                 destiny = None
                 # If it is any other city
@@ -89,15 +89,16 @@ def determine_initial_population(size, cities):
 
 
 def determine_best_routes(population):
-    results = {}
-    for i in range(0, len(population)):
-        results[i] = Adaptability(population[i]).determine_adaptability()
+    dapatability_results = {}
+    for i in range(len(population)):
+        dapatability_results[i] = Adaptability(
+            population[i]).determine_adaptability()
     """ The best routes are the ones with less distance.
         We use the key=lambda because we are creating an anonymous
         function to sort the list based on the first element on it """
-    sorted_results = sorted(results.items(),
-                            key=lambda x: x[1])
-    return sorted_results
+    sorted_dapatability_results = sorted(dapatability_results.items(),
+                                         key=lambda x: x[1])
+    return sorted_dapatability_results
 
 
 """ Selects the population members to be 'mated' for reproduction.
@@ -112,7 +113,7 @@ def select_mating_pool(population, best_routes, elite_quantity):
         selected_members.append(best_routes[i][0])
 
     new_mating_pool = []
-    for i in range(0, len(selected_members)):
+    for i in range(len(selected_members)):
         selected_member_index = selected_members[i]
         new_mating_pool.append(population[selected_member_index])
 
@@ -128,19 +129,26 @@ def produce_offspring(first_parent, second_parent):
     offspring_1st_half = []
     offspring_2nd_half = []
 
-    first_gene = int(random.random() * len(first_parent))
-    second_gene = int(random.random() * len(first_parent))
-    copied_set_start = min(first_gene, second_gene)
-    copied_set_end = max(first_gene, second_gene)
+    first_chromosome_pos = int(random.random() * len(first_parent)-1)
+    second_chromosome_pos = int(random.random() * len(first_parent)-1)
+
+    if first_chromosome_pos <= second_chromosome_pos:
+        copied_set_start = first_chromosome_pos
+        copied_set_end = second_chromosome_pos
+    else:
+        copied_set_start = second_chromosome_pos
+        copied_set_end = first_chromosome_pos
 
     """ Copies a set (part) of random length from the first parent to the offpsring """
-    for i in range(copied_set_start, copied_set_end):
-        offspring_1st_half.append(first_parent[i])
+    for pos in range(copied_set_start, copied_set_end):
+        offspring_1st_half.append(first_parent[pos])
 
     """ Fills the missing gaps in the offspring with the contents of the second parent """
     for chromosomes in second_parent:
         if chromosomes not in offspring_1st_half:
             offspring_2nd_half.append(chromosomes)
+
+    """ Joins the two halves of the offspring to create a single one """
     offspring = offspring_1st_half+offspring_2nd_half
 
     return offspring
@@ -153,10 +161,10 @@ def breed_population(mating_pool, elite_quantity):
     offsprings = []
     new_pool = random.sample(mating_pool, len(mating_pool))
 
-    for i in range(0, elite_quantity):
+    for i in range(elite_quantity):
         offsprings.append(mating_pool[i])
 
-    for i in range(0, len(mating_pool) - elite_quantity):
+    for i in range(len(mating_pool) - elite_quantity):
         offspring = produce_offspring(
             new_pool[i], new_pool[len(mating_pool-1-i)])
 
@@ -166,7 +174,7 @@ def breed_population(mating_pool, elite_quantity):
 
 
 """ Simulates mutations of a single element in the list, to keep the general list still 'fresh'
-    and to avoid an event called 'convergence' (results don't differ much) from happening early.
+    and to avoid an event called 'convergence' (dapatability_results don't differ much) from happening early.
     Mutation happens on a certain probability (mutation_prob). The implementation of this mutation
     just switches the order of some random cities in the list. """
 
@@ -188,7 +196,7 @@ def mutate_single(single, mutation_prob):
 def mutate_population(population, mutation_prob):
     new_population = []
 
-    for i in range(0, len(population)):
+    for i in range(len(population)):
         new_mutation = mutate_single(population[i], mutation_prob)
         new_population.append(new_mutation)
 
@@ -228,18 +236,19 @@ def genetic_algorithm(population, population_quantity, elite_quantity, mutation_
     print("-----------------")
 
     dist_final = determine_best_routes(new_population)[0][1]
-    print("Final best distance: " + str(1/dist_final))
+    print(
+        f"Final best distance after {iterations} iterations: : " + str(1/dist_final))
     print("-----------------")
 
     best_route = determine_best_routes(new_population)[0][0]
-    print("Final best solution for the Traveling Salesman: ",
+    print(f"Final best solution for the Traveling Salesman after {iterations} iterations: ",
           new_population[best_route])
 
 
 """ Randomly creates a list of 10 cities.
     Uncomment to TEST! """
 """ random_cities = []
-for i in range(0, 10):
+for i in range(10):
     random_x = int(random.random()*50)
     random_y = int(random.random()*50)
     random_cities.append(CityNode(random_x, random_y)) """
@@ -252,7 +261,12 @@ for i in range(10):
     cities.append(CityNode(positions_x[i], positions_y[i]))
 
 """ Population, quantity of the population, elite quantity of chosen members, probability of mutation and iterations """
-genetic_algorithm(cities, 100, 20, 0.5, 1000)
+probability_to_mutate = 0.01
+population_number = 50
+members_to_breed = 15
+iterations = 1000
+genetic_algorithm(cities, population_number,
+                  members_to_breed, probability_to_mutate, iterations)
 
 """ References:
 * https://medium.com/@becmjo/genetic-algorithms-and-the-travelling-salesman-problem-d10d1daf96a1
